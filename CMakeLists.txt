@@ -1,14 +1,8 @@
 cmake_minimum_required(VERSION 3.25)
-project(OpenCL_CGOL)
+project(CGOL_CLGL_Interop)
 
 set(CMAKE_CXX_STANDARD 23)
 
-add_executable(OpenCL_CGOL main.cpp CGOL.cpp CGOL.h oclkern.h oglshader.h)
+add_executable(CGOL_CLGL_Interop main.cpp CGOL.cpp CGOL.h oclkern.h oglshader.h gl_cl_util.h)
 
-target_link_libraries(OpenCL_CGOL OpenCL)
-target_link_libraries(OpenCL_CGOL OpenGL)
-target_link_libraries(OpenCL_CGOL glfw)
-target_link_libraries(OpenCL_CGOL GLEW)
-target_link_libraries(OpenCL_CGOL GLX)
-target_link_libraries(OpenCL_CGOL X11)
-
+target_link_libraries(CGOL_CLGL_Interop OpenCL OpenGL GLEW glfw)

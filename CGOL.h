@@ -14,13 +14,11 @@
 #define GLFW_EXPOSE_NATIVE_X11
 #define GLFW_EXPOSE_NATIVE_GLX
 #include <GLFW/glfw3native.h>
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <GL/glx.h>
 
 const int WORKGROUP_SIDE = 16;
-const int SCREEN_WIDTH = 640;
-const int SCREEN_HEIGHT = 480;
+
+const int SCREEN_WIDTH = 1080;
+const int SCREEN_HEIGHT = 720;
 
 struct PixelRGBA {
     uint8_t r;
@@ -44,6 +42,8 @@ private:
     GLuint texture;
 
     void runOCLKernel(cl::Kernel &kernel);
+    void initGL();
+    void initCL();
 
 public:
     CGOL(int width, int height);
@@ -53,8 +53,6 @@ public:
     std::vector<PixelRGBA> Read();
 
     void Start();
-
-    void Render();
 
     void Step();
 };

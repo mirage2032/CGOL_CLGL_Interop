@@ -13,13 +13,11 @@ void prt(std::vector<PixelRGBA> mat, int x, int y) {
 
 int main() {
     struct {
-        int x=30;
-        int y=30;
+        int x=1080/5;
+        int y=720/5;
     } sz;
     CGOL c(sz.x, sz.y);
-//    c.Randomize();
-    auto x = c.Read();
-    prt(c.Read(),sz.x, sz.y);
+    c.Randomize();
     c.Start();
     auto start = std::chrono::high_resolution_clock::now();
     for(int i = 0;i<100000;i++){

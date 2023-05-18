@@ -25,19 +25,6 @@ const char* fragmentShaderDEBUGSource = R"(
 #version 330 core
 
 in vec2 fragTexCoord;
-
-out vec4 fragColor;
-
-void main()
-{
-    fragColor = vec4(fragTexCoord.x, 0.0, fragTexCoord.y, 1.0);
-}
-)";
-
-const char* fragmentShaderTextureSource = R"(
-#version 330 core
-
-in vec2 fragTexCoord;
 out vec4 fragColor;
 
 uniform bool useTexture;
@@ -47,12 +34,26 @@ void main()
 {
     if (useTexture)
     {
-        fragColor = vec4(texture(textureSampler, fragTexCoord).r*1111,0,0,1.0f);
+        fragColor = texture(textureSampler, fragTexCoord);
     }
     else
     {
         fragColor = vec4(fragTexCoord, 0.0, 1.0);
     }
+}
+)";
+
+const char* fragmentShaderTextureSource = R"(
+#version 330 core
+
+in vec2 fragTexCoord;
+out vec4 fragColor;
+
+uniform sampler2D textureSampler;
+
+void main()
+{
+    fragColor = texture(textureSampler, fragTexCoord);
 }
 )";
 

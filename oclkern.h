@@ -5,7 +5,7 @@
 #ifndef OPENCL0_OCLKERN_H
 #define OPENCL0_OCLKERN_H
 
-const char *kernel_randomize = R"(
+const char *CGOLOpenCLKernel = R"(
 inline float random(ulong seed) {
     unsigned int state = seed * (get_global_id(1) * get_global_size(0) + get_global_id(0));
     unsigned int x = state * 1234567 + 8901234;
@@ -14,8 +14,8 @@ inline float random(ulong seed) {
 }
 
 inline bool getCell(__read_write image2d_t mat, int x, int y) {
-    uint4 pixel = read_imageui(mat, (int2)(x, y));
-    bool status = pixel.s0 == 255 ? true : false;
+    float4 pixel = read_imagef(mat, (int2)(x, y));
+    bool status = pixel.s0 == 1.0f ? true : false;
     return status;
 }
 
