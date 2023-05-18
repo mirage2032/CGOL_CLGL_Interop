@@ -13,8 +13,8 @@ void prt(std::vector<PixelRGBA> mat, int x, int y) {
 
 int main() {
     struct {
-        int x=1 << 12;
-        int y=1 << 12;
+        int x=1 << 11;
+        int y=1 << 11;
     } simulationSize;
     CGOL c(simulationSize.x, simulationSize.y);
     c.Randomize();

@@ -4,19 +4,35 @@ This is a Conway's Game of Life cellular automata computed using OpenCL and rend
 
 ## Instructions
 
-Just compile and execute it.
+Set the scale of the simulation and of the window in the source code.
 
-The scale of the simulator and of the window can easily be changed in the code.
+<mark>Depending on the system the simulation scale might need to be lowered.</mark>
 
-#### IMPORTANT: Depending on the system the simulation scale might need to be lowered.
+Make sure that the same GPU is used by both the OpenCL and the OpenGL contexts.
+
+Set the following environment variables
+### Nvidia
+```bash
+export __NV_PRIME_RENDER_OFFLOAD=1
+export __GLX_VENDOR_LIBRARY_NAME=nvidia
+```
+### AMD
+```bash
+export DRI_PRIME=1
+```
+
+<mark>This is really needed as without using the same GPU for the contexts the memory would need to be copied between them. </mark>
+
+
+GPUs.
+
+Execute it
 
 ## Requirements
 
 * Linux machine (using X11)
 * C++ development toolchain
 * Necessary libraries: GLFW, GLEW, OpenCL, OpenGL
-
-Tested and working on Arch Linux.
 
 ## Results
 
@@ -40,6 +56,7 @@ struct {
 ```
 
 Window size: 1080x720
+
 ```cpp
 CGOL.h
 

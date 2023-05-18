@@ -184,7 +184,7 @@ void CGOL::Start() {
         Step();
 //        // Limit FPS
 //        // Delay to maintain desired frame rate
-//        float targetFrameTime = 1.0f / 1.0f; // 60 FPS
+//        float targetFrameTime = 1.0f / 60f; // 60 FPS
 //        float remainingTime = targetFrameTime - deltaTime;
 //        if (remainingTime > 0) {
 //            // Sleep to maintain frame rate
