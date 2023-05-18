@@ -13,34 +13,26 @@ void prt(std::vector<PixelRGBA> mat, int x, int y) {
 
 int main() {
     struct {
-        int x=1080/5;
-        int y=720/5;
-    } sz;
-    CGOL c(sz.x, sz.y);
+        int x=1 << 12;
+        int y=1 << 12;
+    } simulationSize;
+    CGOL c(simulationSize.x, simulationSize.y);
     c.Randomize();
     c.Start();
-    auto start = std::chrono::high_resolution_clock::now();
-    for(int i = 0;i<100000;i++){
-        c.Step();
-    }
-    auto end = std::chrono::high_resolution_clock::now();
+//    auto start = std::chrono::high_resolution_clock::now();
+//    for(int i = 0;i<100000;i++){
+//        c.Step();
+//    }
+//    auto end = std::chrono::high_resolution_clock::now();
+//
+//    // Calculate the duration in seconds
+//    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+//    long long miliseconds = duration.count();
+//
+//    // Output the time taken
+//    if (miliseconds>1000)
+//        std::cout << "Time taken: " << miliseconds / 1000.0 << " seconds" << std::endl;
+//    else
+//        std::cout << "Time taken: " << miliseconds << " miliseconds3" << std::endl;
 
-    // Calculate the duration in seconds
-    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-    long long miliseconds = duration.count();
-
-    // Output the time taken
-    if (miliseconds>1000)
-        std::cout << "Time taken: " << miliseconds / 1000.0 << " seconds" << std::endl;
-    else
-        std::cout << "Time taken: " << miliseconds << " miliseconds3" << std::endl;
-
-//        c.Start();
-//    std::cout<<"DONE";
-//    x = c.Read();
-//    prt(x,sz.x, sz.y);
-//    c.Start();
-//    c.Step();
-//    x = c.Read();
-//    prt(x,10,6);
 }

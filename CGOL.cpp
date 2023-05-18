@@ -4,7 +4,6 @@
 #define CL_HPP_ENABLE_EXCEPTIONS
 
 #include <iostream>
-#include <cmath>
 #include "CGOL.h"
 #include "oclkern.h"
 #include "oglshader.h"
@@ -47,8 +46,9 @@ void CGOL::initGL() {
     glDebugMessageCallback(debugCallback, nullptr);
 
     programOGL = buildOGLProgram(vertexShaderSource, fragmentShaderTextureSource);
-    vao = genVAO();
+    fullscreenMesh = genPlaneMesh();
 
+    // Generate and bind the texture
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);
 
@@ -57,8 +57,9 @@ void CGOL::initGL() {
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    // Unbind texture
     glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -93,6 +94,14 @@ void CGOL::initCL() {
     buildOCLProgram(context, &program);
 }
 
+void CGOL::destroyGL() {
+    glDeleteTextures(1, &texture);
+    destroyMesh(fullscreenMesh);
+    glDeleteProgram(programOGL);
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}
+
 CGOL::CGOL(int width, int height) : width(width), height(height) {
     //Initialize GL first as the existing GL texture will be bound to a CL image
     initGL();
@@ -111,6 +120,7 @@ void CGOL::runOCLKernel(cl::Kernel &kernel) {
         // Print the error details
         std::cerr << "OpenCL Error: " << error.what() << " (" << error.err() << ")" << std::endl;
     }
+    queue.finish();
     clEnqueueReleaseGLObjects(queue(), 1, &matrixCells(), 0, nullptr, nullptr);
 }
 
@@ -145,12 +155,22 @@ void CGOL::Step() {
 }
 
 void CGOL::Start() {
+    glfwSwapInterval(0);
     glUseProgram(programOGL);
     glActiveTexture(GL_TEXTURE0);
     glUniform1i(glGetUniformLocation(programOGL, "textureSampler"), 0);
-    glBindVertexArray(vao);
+    glBindVertexArray(fullscreenMesh.vao);
     glBindTexture(GL_TEXTURE_2D, texture);
+
+    double previousTime = glfwGetTime();
+    int frameCount = 0;
+
     while (!glfwWindowShouldClose(window)) {
+        // Calculate the elapsed time since the last frame
+        double currentTime = glfwGetTime();
+        float deltaTime = static_cast<float>(currentTime - previousTime);
+        previousTime = currentTime;
+
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT);
 
@@ -161,9 +181,29 @@ void CGOL::Start() {
         glfwSwapBuffers(window);
         glfwPollEvents();
 
-        // glfwWaitEventsTimeout(1.0);
         Step();
+//        // Limit FPS
+//        // Delay to maintain desired frame rate
+//        float targetFrameTime = 1.0f / 1.0f; // 60 FPS
+//        float remainingTime = targetFrameTime - deltaTime;
+//        if (remainingTime > 0) {
+//            // Sleep to maintain frame rate
+//            glfwWaitEventsTimeout(targetFrameTime-deltaTime);
+//        }
+        frameCount++;
+
+        // Calculate and print current frames per second
+        float fps = frameCount / deltaTime;
+        std::cout << "Current FPS: " << fps << "      \r";
+        frameCount = 0;
+
     }
+
     glBindTexture(GL_TEXTURE_2D, 0);
     glBindVertexArray(0);
+    glUseProgram(0);
+}
+
+CGOL::~CGOL() {
+    destroyGL();
 }

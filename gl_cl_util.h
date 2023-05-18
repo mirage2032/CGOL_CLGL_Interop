@@ -11,7 +11,7 @@ void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsiz
     std::cerr << "OpenGL Debug Message: " << message << std::endl;
 }
 
-GLuint genVAO() {
+MeshData genPlaneMesh() {
     GLfloat vertices[] = {
             -1.0f, -1.0f, 0.0f,  // Bottom-left vertex
             1.0f, -1.0f, 0.0f,   // Bottom-right vertex
@@ -31,19 +31,21 @@ GLuint genVAO() {
             0, 1, 2,   // First triangle
             2, 3, 0    // Second triangle
     };
-    GLuint vbo, vao, ebo;
-    glGenBuffers(1, &vbo);
-    glGenVertexArrays(1, &vao);
-    glGenBuffers(1, &ebo);
 
-    glBindVertexArray(vao);
+    MeshData mesh{};
 
-    glBindBuffer(GL_ARRAY_BUFFER, vbo);
+    glGenBuffers(1, &mesh.vbo);
+    glGenVertexArrays(1, &mesh.vao);
+    glGenBuffers(1, &mesh.ebo);
+
+    glBindVertexArray(mesh.vao);
+
+    glBindBuffer(GL_ARRAY_BUFFER, mesh.vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices) + sizeof(texCoords), nullptr, GL_STATIC_DRAW);
     glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(vertices), vertices);
     glBufferSubData(GL_ARRAY_BUFFER, sizeof(vertices), sizeof(texCoords), texCoords);
 
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, mesh.ebo);
     glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
     // Set up vertex attribute pointers
@@ -54,7 +56,16 @@ GLuint genVAO() {
     glEnableVertexAttribArray(1);
 
     glBindVertexArray(0);
-    return vao;
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0);
+
+    return mesh;
+}
+
+void destroyMesh(MeshData &mesh) {
+    glDeleteBuffers(1, &mesh.vbo);
+    glDeleteBuffers(1, &mesh.ebo);
+    glDeleteVertexArrays(1, &mesh.vao);
 }
 
 void buildOCLProgram(cl::Context &ctx, cl::Program *program) {
