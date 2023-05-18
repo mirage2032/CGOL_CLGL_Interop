@@ -3,12 +3,12 @@
 //
 #define CL_HPP_ENABLE_EXCEPTIONS
 
-#include <CL/cl_gl.h>
 #include <iostream>
 #include <cmath>
 #include "CGOL.h"
 #include "oclkern.h"
 #include "oglshader.h"
+
 
 void debugCallback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar *message,
                    const void *userParam) {
@@ -142,17 +142,18 @@ GLuint genVAO() {
 }
 
 CGOL::CGOL(int width, int height) : width(width), height(height) {
+
     // Initialize GLFW
     if (!glfwInit()) {
         std::cerr << "Failed to initialize GLFW" << std::endl;
     }
 
     // Create a OpenGL window
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
     // Use dedicated GPU
-    window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Pixel Renderer", NULL, NULL);
+    window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Proc", NULL, NULL);
     if (!window) {
         std::cerr << "Failed to create GLFW window" << std::endl;
         glfwTerminate();
@@ -176,31 +177,47 @@ CGOL::CGOL(int width, int height) : width(width), height(height) {
     programOGL = buildOGLProgram(vertexShaderSource, fragmentShaderTextureSource);
     vao = genVAO();
 
-    clEnqueueReleaseGLObjects(queue(), 1, &matrixCells(), 0, nullptr, nullptr);
     glGenTextures(1, &texture);
-    glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    // Set texture parameters
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+    GLubyte pixelData[100 * 100 * 4]; // White pixel data (100x100 pixels)
+
+// Fill the pixel data with white color
+    for (int i = 0; i < 100 * 100 * 4; i += 4) {
+        pixelData[i] = 255;     // Red component
+        pixelData[i + 1] = 255; // Green component
+        pixelData[i + 2] = 255; // Blue component
+        pixelData[i + 3] = 255; // Alpha component
+    }
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixelData);
+    glBindTexture(GL_TEXTURE_2D, 0);
 
 
 /////////////////////////////
+    cl_context_properties properties[] = {
+            CL_GL_CONTEXT_KHR, (cl_context_properties) glfwGetGLXContext(window),
+            CL_GLX_DISPLAY_KHR, (cl_context_properties) glfwGetX11Display(),
+            CL_CONTEXT_PLATFORM, (cl_context_properties) (cl::Platform::getDefault()()),
+            0
+    };
 
-
-    context = cl::Context(CL_DEVICE_TYPE_GPU);
+    context = cl::Context(CL_DEVICE_TYPE_GPU, properties);
     cl::Device device = context.getInfo<CL_CONTEXT_DEVICES>()[0];
     queue = cl::CommandQueue(context, device);
 
     //create buffer for the cells
     cl_int error;
-    matrixCells = cl::Image2D(context, CL_MEM_READ_WRITE,
-                              {CL_RGBA, CL_UNSIGNED_INT8},
-                              width, height,
-                              0, nullptr,
-                              &error);
+    matrixCells = cl::ImageGL(context, CL_MEM_READ_WRITE, GL_TEXTURE_2D, 0, texture, &error);
+//    matrixCells = cl::Image2D(context, CL_MEM_READ_WRITE,
+//                              {CL_RGBA, CL_UNSIGNED_INT8},
+//                              width, height,
+//                              0, nullptr,
+//                              &error);
 
     std::string OCLDeviceName;
     std::string OCLDeviceVersion;
@@ -218,6 +235,7 @@ CGOL::CGOL(int width, int height) : width(width), height(height) {
 }
 
 void CGOL::runOCLKernel(cl::Kernel &kernel) {
+    clEnqueueAcquireGLObjects(queue(), 1, &matrixCells(), 0, nullptr, nullptr);
     try {
         cl::NDRange local(WORKGROUP_SIDE, WORKGROUP_SIDE);
         cl::NDRange global(((width + WORKGROUP_SIDE - 1) / WORKGROUP_SIDE) * WORKGROUP_SIDE,
@@ -228,15 +246,18 @@ void CGOL::runOCLKernel(cl::Kernel &kernel) {
         // Print the error details
         std::cerr << "OpenCL Error: " << error.what() << " (" << error.err() << ")" << std::endl;
     }
+    clEnqueueReleaseGLObjects(queue(), 1, &matrixCells(), 0, nullptr, nullptr);
 }
 
 std::vector<PixelRGBA> CGOL::Read() {
+    clEnqueueAcquireGLObjects(queue(), 1, &matrixCells(), 0, nullptr, nullptr);
     std::vector<PixelRGBA> imageData(width * height);
     queue.enqueueReadImage(matrixCells, CL_TRUE,
                            {0, 0, 0},
                            {width, height, 1},
                            0, 0,
                            imageData.data());
+    clEnqueueReleaseGLObjects(queue(), 1, &matrixCells(), 0, nullptr, nullptr);
     return imageData;
 }
 
@@ -265,15 +286,16 @@ void CGOL::Render() {
 
 void CGOL::Start() {
     glUseProgram(programOGL);
-//    glUniform1i(glGetUniformLocation(programOGL, "useTexture"),GL_TRUE);
-    glUniform1i(glGetUniformLocation(programOGL, "textureSampler"),texture);
-
-
+    glUniform1i(glGetUniformLocation(programOGL, "useTexture"),GL_TRUE);
+    glUniform1i(glGetUniformLocation(programOGL, "textureSampler"), texture);
     glBindVertexArray(vao);
+    glActiveTexture(GL_TEXTURE0);
+
     while (!glfwWindowShouldClose(window)) {
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT);
-        glBindTexture(GL_TEXTURE_2D,texture);
+
+        glBindTexture(GL_TEXTURE_2D, texture);
         clEnqueueAcquireGLObjects(queue(), 1, &matrixCells(), 0, nullptr, nullptr);
 
         // Issue draw call to render the VAO
@@ -282,6 +304,8 @@ void CGOL::Start() {
         // Swap buffers and poll for events
         glfwSwapBuffers(window);
         glfwPollEvents();
+
+        glBindTexture(GL_TEXTURE_2D, 0);
     }
     glBindVertexArray(0);
 }

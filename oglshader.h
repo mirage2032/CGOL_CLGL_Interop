@@ -47,7 +47,7 @@ void main()
 {
     if (useTexture)
     {
-        fragColor = texture(textureSampler, fragTexCoord);
+        fragColor = vec4(texture(textureSampler, fragTexCoord).r*1111,0,0,1.0f);
     }
     else
     {

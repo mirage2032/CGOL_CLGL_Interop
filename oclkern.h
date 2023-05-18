@@ -20,8 +20,8 @@ inline bool getCell(__read_write image2d_t mat, int x, int y) {
 }
 
 inline void setCell(__read_write image2d_t mat, int x, int y, bool state) {
-    uint4 pixelValue = (state == true) ? (uint4)(255, 0, 0, 255) : (uint4)(0, 0, 0, 255);
-    write_imageui(mat, (int2)(x, y), pixelValue);
+    float4 pixelValue = (state == true) ? (float4)(1.0f, 0, 0, 1.0f) : (float4)(0, 0, 0, 1.0f);
+    write_imagef(mat, (int2)(x, y), pixelValue);
 }
 
 __kernel void randomizeMatrix(__read_write image2d_t mat, ulong seed) {
